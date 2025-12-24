@@ -50,43 +50,11 @@ impl ClientExecutorInputWithState {
         let input = Box::leak(Box::new(input));
         let bump = Box::leak(Box::new(Bump::with_capacity(BUMP_AREA_SIZE)));
 
-        let state = {
-            let (state_num_nodes, state_bytes) = &input.parent_state_bytes.state_trie;
-            let state_trie = Mpt::decode_trie(bump, &mut state_bytes.as_ref(), *state_num_nodes)?;
-            if state_trie.hash() != input.ancestor_headers[0].state_root {
-                return Err(ClientExecutionError::ParentStateRootMismatch {
-                    actual: state_trie.hash(),
-                    expected: input.ancestor_headers[0].state_root,
-                });
-            }
-
-            let mut storage_tries = HashMap::with_capacity_and_hasher(
-                input.parent_state_bytes.storage_tries.len(),
-                DefaultHashBuilder::default(),
-            );
-            for (hashed_address, num_nodes, storage_trie_bytes) in
-                &input.parent_state_bytes.storage_tries
-            {
-                let account_in_trie =
-                    state_trie.get_rlp::<TrieAccount>(hashed_address.as_slice())?;
-                let expected_storage_root =
-                    account_in_trie.map_or(reth_trie::EMPTY_ROOT_HASH, |a| a.storage_root);
-
-                let storage_trie =
-                    Mpt::decode_trie(bump, &mut storage_trie_bytes.as_ref(), *num_nodes)?;
-                if storage_trie.hash() != expected_storage_root {
-                    return Err(ClientExecutionError::ParentStorageRootMismatch {
-                        hashed_account: *hashed_address,
-                        actual: storage_trie.hash(),
-                        expected: expected_storage_root,
-                    });
-                }
-
-                storage_tries.insert(*hashed_address, storage_trie);
-            }
-
-            EthereumState { state_trie, storage_tries, bump }
-        };
+        let state = EthereumState::from_ethereum_state_bytes(
+            bump,
+            input.ancestor_headers[0].state_root,
+            &input.parent_state_bytes,
+        )?;
 
         Ok(Self { input, state })
     }

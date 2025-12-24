@@ -44,6 +44,12 @@ pub enum Error {
     /// Occurs when a value is unexpectedly found in a branch node.
     #[error("branch node with value")]
     ValueInBranch,
+    /// Parent state root does not match expected value.
+    #[error("parent state root mismatch: actual {actual:#}, expected {expected:#}")]
+    ParentStateRootMismatch { actual: B256, expected: B256 },
+    /// Parent storage root does not match expected value for account.
+    #[error("parent storage root mismatch for {hashed_account:#}: actual {actual:#}, expected {expected:#}")]
+    ParentStorageRootMismatch { hashed_account: B256, actual: B256, expected: B256 },
 }
 
 /// Arena-based implementation that stores all nodes in a flat vector and uses indices for better

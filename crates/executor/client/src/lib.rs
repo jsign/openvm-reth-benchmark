@@ -2,6 +2,8 @@ pub mod error;
 /// Client program input data types.
 pub mod io;
 
+pub mod statelesstrie;
+
 use std::{fmt::Debug, sync::Arc};
 
 use alloy_consensus::TxReceipt;

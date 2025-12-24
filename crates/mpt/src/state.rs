@@ -40,6 +40,45 @@ impl EthereumState {
         }
     }
 
+    pub fn from_ethereum_state_bytes(
+        bump: &'static Bump,
+        pre_state_root: B256,
+        parent_state_bytes: &'static EthereumStateBytes,
+    ) -> Result<Self, Error> {
+        let (state_num_nodes, state_bytes) = &parent_state_bytes.state_trie;
+        let state_trie = Mpt::decode_trie(bump, &mut state_bytes.as_ref(), *state_num_nodes)?;
+        if state_trie.hash() != pre_state_root {
+            return Err(Error::ParentStateRootMismatch {
+                actual: state_trie.hash(),
+                expected: pre_state_root,
+            });
+        }
+
+        let mut storage_tries = HashMap::with_capacity_and_hasher(
+            parent_state_bytes.storage_tries.len(),
+            DefaultHashBuilder::default(),
+        );
+        for (hashed_address, num_nodes, storage_trie_bytes) in &parent_state_bytes.storage_tries {
+            let account_in_trie = state_trie.get_rlp::<TrieAccount>(hashed_address.as_slice())?;
+            let expected_storage_root =
+                account_in_trie.map_or(reth_trie::EMPTY_ROOT_HASH, |a| a.storage_root);
+
+            let storage_trie =
+                Mpt::decode_trie(bump, &mut storage_trie_bytes.as_ref(), *num_nodes)?;
+            if storage_trie.hash() != expected_storage_root {
+                return Err(Error::ParentStorageRootMismatch {
+                    hashed_account: *hashed_address,
+                    actual: storage_trie.hash(),
+                    expected: expected_storage_root,
+                });
+            }
+
+            storage_tries.insert(*hashed_address, storage_trie);
+        }
+
+        Ok(Self { state_trie, storage_tries, bump })
+    }
+
     pub fn update_from_bundle_state(&mut self, bundle_state: &BundleState) -> Result<(), Error> {
         for (address, account) in &bundle_state.state {
             let hashed_address = keccak256(address);
