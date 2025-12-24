@@ -9,7 +9,7 @@ members = [
     "crates/host-bench",
     "crates/mpt",
     "crates/revm-crypto",
-    "bin/verifier-bench"
+    "bin/verifier-bench",
 ]
 exclude = []
 resolver = "3"
@@ -83,6 +83,7 @@ reth-ethereum-primitives = { git = "https://github.com/paradigmxyz/reth", tag = 
     "serde",
     "serde-bincode-compat",
 ] }
+reth-stateless = { git = "https://github.com/paradigmxyz/reth", tag = "v1.9.3", default-features = false }
 
 # revm
 revm = { version = "31.0.2", features = ["serde"], default-features = false }
