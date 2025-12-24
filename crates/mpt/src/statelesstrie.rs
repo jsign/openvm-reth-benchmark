@@ -1,6 +1,6 @@
+use crate::{EthereumState, EthereumStateBytes, Mpt};
 use bincode::config::standard;
 use bumpalo::Bump;
-use openvm_mpt::{EthereumState, EthereumStateBytes, Mpt};
 use reth_stateless::{validation::StatelessValidationError, ExecutionWitness};
 use reth_storage_errors::provider::ProviderError;
 use reth_trie::{TrieAccount, EMPTY_ROOT_HASH};
@@ -9,11 +9,11 @@ use revm::state::Bytecode;
 use revm_primitives::{keccak256, map::B256Map, Address, B256, U256};
 
 #[derive(Debug)]
-pub struct StatelessSparseTrie {
+pub struct OpenVMStatelessSparseTrie {
     state: EthereumState,
 }
 
-impl reth_stateless::StatelessTrie for StatelessSparseTrie {
+impl reth_stateless::StatelessTrie for OpenVMStatelessSparseTrie {
     /// Initialize the stateless trie using the `ExecutionWitness`
     fn new(
         witness: &ExecutionWitness,
