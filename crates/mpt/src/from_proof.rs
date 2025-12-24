@@ -219,7 +219,7 @@ pub fn transition_proofs_to_tries(
 
 pub fn from_execution_witness(
     pre_state_root: B256,
-    witness: ExecutionWitness,
+    witness: &ExecutionWitness,
 ) -> Result<EthereumState, Error> {
     let account_addresses: Vec<_> = witness
         .keys

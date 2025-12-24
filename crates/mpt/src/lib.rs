@@ -16,3 +16,5 @@ pub mod resolver;
 
 #[cfg(test)]
 mod tests;
+
+pub mod statelesstrie;
