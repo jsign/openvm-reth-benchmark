@@ -1,5 +1,5 @@
 use bumpalo::Bump;
-use reth_trie::AccountProof;
+use reth_trie::{AccountProof, TrieAccount};
 use revm_primitives::{keccak256, Address, HashMap, B256};
 
 use crate::{
@@ -213,5 +213,47 @@ pub fn transition_proofs_to_tries(
     }
 
     let state_trie = resolve_nodes(&state_root_node, &state_nodes);
+    Ok(EthereumState { state_trie: state_trie.into_inner(), storage_tries, bump })
+}
+
+pub fn from_execution_witness(
+    state_root: B256,
+    rlp_nodes: &[impl AsRef<[u8]>],
+    account_addresses: &[Address],
+) -> Result<EthereumState, Error> {
+    let bump = Box::leak(Box::new(Bump::new()));
+
+    if rlp_nodes.is_empty() {
+        return Ok(EthereumState {
+            state_trie: node_from_digest(state_root).into_inner(),
+            storage_tries: HashMap::default(),
+            bump,
+        });
+    }
+
+    let mut storage_tries = HashMap::default();
+    let mut state_nodes = HashMap::default();
+
+    process_proof(rlp_nodes, &mut state_nodes)?;
+    let state_root_node = state_nodes.get(&state_root).unwrap();
+    let state_trie = resolve_nodes(state_root_node, &state_nodes);
+
+    for address in account_addresses {
+        let hashed_address = keccak256(address);
+
+        let Some(account) =
+            state_trie.inner().get_rlp::<TrieAccount>(hashed_address.as_slice()).unwrap()
+        else {
+            continue;
+        };
+
+        let Some(storage_root_node) = state_nodes.get(&account.storage_root) else {
+            continue;
+        };
+
+        let storage_trie = resolve_nodes(storage_root_node, &state_nodes);
+        storage_tries.insert(hashed_address, storage_trie.into_inner());
+    }
+
     Ok(EthereumState { state_trie: state_trie.into_inner(), storage_tries, bump })
 }
