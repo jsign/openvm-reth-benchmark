@@ -5216,6 +5216,7 @@ version = "0.3.0"
 dependencies = [
  "alloy-consensus",
  "alloy-primitives",
+ "bincode 2.0.1",
  "bumpalo",
  "itertools 0.14.0",
  "openvm-mpt",
@@ -5230,7 +5231,10 @@ dependencies = [
  "reth-primitives",
  "reth-primitives-traits",
  "reth-revm",
+ "reth-stateless",
+ "reth-storage-errors",
  "reth-trie",
+ "reth-trie-common",
  "revm 31.0.2",
  "revm-primitives 21.0.2",
  "serde",

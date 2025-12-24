@@ -218,18 +218,9 @@ pub fn transition_proofs_to_tries(
 }
 
 pub fn from_execution_witness(
-    block_number: u64,
+    pre_state_root: B256,
     witness: ExecutionWitness,
 ) -> Result<EthereumState, Error> {
-    let parent_state_root = witness
-        .headers
-        .iter()
-        .find_map(|h| {
-            let header = alloy_rlp::decode_exact::<alloy_consensus::Header>(h).unwrap();
-            (header.number == block_number - 1).then_some(header.state_root)
-        })
-        .unwrap();
-
     let account_addresses: Vec<_> = witness
         .keys
         .iter()
@@ -240,7 +231,7 @@ pub fn from_execution_witness(
     let mut state_nodes = HashMap::default();
 
     process_proof(&witness.state, &mut state_nodes)?;
-    let state_root_node = state_nodes.get(&parent_state_root).unwrap();
+    let state_root_node = state_nodes.get(&pre_state_root).unwrap();
     let state_trie = resolve_nodes(state_root_node, &state_nodes);
 
     let storage_tries = account_addresses

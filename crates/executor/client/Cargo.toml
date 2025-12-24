@@ -15,6 +15,7 @@ serde.workspace = true
 serde_with.workspace = true
 bumpalo.workspace = true
 itertools.workspace = true
+bincode.workspace = true
 
 # workspace
 openvm-primitives.workspace = true
@@ -31,9 +32,12 @@ reth-execution-types.workspace = true
 reth-primitives = { workspace = true }
 reth-primitives-traits.workspace = true
 reth-trie.workspace = true
+reth-trie-common.workspace = true
 reth-evm.workspace = true
+reth-storage-errors.workspace = true
 reth-evm-ethereum.workspace = true
 reth-revm.workspace = true
+reth-stateless.workspace = true
 
 # revm
 revm.workspace = true
