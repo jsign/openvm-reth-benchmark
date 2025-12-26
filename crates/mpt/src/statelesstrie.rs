@@ -9,7 +9,7 @@ use reth_trie_common::HashedPostState;
 use revm::state::Bytecode;
 use revm_primitives::{keccak256, map::B256Map, Address, B256, KECCAK_EMPTY, U256};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct OpenVMStatelessSparseTrie {
     state: EthereumState,
 }
