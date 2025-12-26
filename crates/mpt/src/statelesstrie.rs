@@ -1,12 +1,13 @@
 use crate::{EthereumState, EthereumStateBytes, Mpt};
-use bincode::config::standard;
+use bincode::config::legacy;
 use bumpalo::Bump;
+use itertools::Itertools;
 use reth_stateless::{validation::StatelessValidationError, ExecutionWitness};
 use reth_storage_errors::provider::ProviderError;
 use reth_trie::{TrieAccount, EMPTY_ROOT_HASH};
 use reth_trie_common::HashedPostState;
 use revm::state::Bytecode;
-use revm_primitives::{keccak256, map::B256Map, Address, B256, U256};
+use revm_primitives::{keccak256, map::B256Map, Address, B256, KECCAK_EMPTY, U256};
 
 #[derive(Debug)]
 pub struct OpenVMStatelessSparseTrie {
@@ -23,7 +24,7 @@ impl reth_stateless::StatelessTrie for OpenVMStatelessSparseTrie {
         Self: Sized,
     {
         let bump = Box::leak(Box::new(Bump::with_capacity(1 << 20)));
-        let bincode_config = standard();
+        let bincode_config = legacy();
         let state_bytes: EthereumStateBytes =
             bincode::serde::decode_from_slice(witness.state[0].as_ref(), bincode_config).unwrap().0;
         let state = EthereumState::from_ethereum_state_bytes(
@@ -110,20 +111,22 @@ impl reth_stateless::StatelessTrie for OpenVMStatelessSparseTrie {
         }
 
         // Process account updates
-        for (hashed_address, account_opt) in &state.accounts {
+        for (hashed_address, account_opt) in
+            state.accounts.into_iter().sorted_unstable_by_key(|(addr, _)| *addr)
+        {
             match account_opt {
                 Some(account) => {
                     let storage_root = self
                         .state
                         .storage_tries
-                        .get(hashed_address)
+                        .get(&hashed_address)
                         .map_or(EMPTY_ROOT_HASH, |t| t.hash());
 
                     let trie_account = TrieAccount {
                         nonce: account.nonce,
                         balance: account.balance,
                         storage_root,
-                        code_hash: account.bytecode_hash.unwrap_or_default(),
+                        code_hash: account.bytecode_hash.unwrap_or(KECCAK_EMPTY),
                     };
                     self.state
                         .state_trie
@@ -137,7 +140,7 @@ impl reth_stateless::StatelessTrie for OpenVMStatelessSparseTrie {
                     self.state.state_trie.delete(hashed_address.as_slice()).map_err(|_| {
                         StatelessValidationError::StatelessStateRootCalculationFailed
                     })?;
-                    self.state.storage_tries.remove(hashed_address);
+                    self.state.storage_tries.remove(&hashed_address);
                 }
             }
         }

@@ -5554,6 +5554,7 @@ dependencies = [
  "bumpalo",
  "bytes",
  "hex-literal 1.0.0",
+ "itertools 0.14.0",
  "reth-stateless",
  "reth-storage-errors",
  "reth-trie",
