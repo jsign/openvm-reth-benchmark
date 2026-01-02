@@ -7,6 +7,7 @@ use crate::{
     hp::{prefix_to_nibs, to_encoded_path},
     node::{NodeData, NodeId},
     owned::MptOwned,
+    resolver::MptResolver,
     Error, EthereumState,
 };
 
@@ -221,30 +222,26 @@ pub fn from_execution_witness(
     pre_state_root: B256,
     witness: &ExecutionWitness,
 ) -> Result<EthereumState, Error> {
-    let account_addresses: Vec<_> = witness
-        .keys
-        .iter()
-        .filter_map(|k| (k.len() == 20).then(|| Address::from_slice(k)))
-        .collect();
+    let mpt_resolver = MptResolver::from_iter(
+        witness.state.iter().map(|rlp_node| (B256::from(keccak256(rlp_node)), rlp_node.clone())),
+    );
+    let account_trie = mpt_resolver.resolve(&pre_state_root)?;
 
-    let bump = Box::leak(Box::new(Bump::new()));
-    let mut state_nodes = HashMap::default();
-
-    process_proof(&witness.state, &mut state_nodes)?;
-    let state_root_node = state_nodes.get(&pre_state_root).unwrap();
-    let state_trie = resolve_nodes(state_root_node, &state_nodes);
+    let account_addresses: Vec<_> =
+        witness.keys.iter().filter(|&k| k.len() == 20).map(|k| Address::from_slice(k)).collect();
 
     let storage_tries = account_addresses
         .into_iter()
         .filter_map(|address| {
             let hashed_address = keccak256(address);
             let account =
-                state_trie.inner().get_rlp::<TrieAccount>(hashed_address.as_slice()).unwrap()?;
-            let storage_root_node = state_nodes.get(&account.storage_root)?;
-            let storage_trie = resolve_nodes(storage_root_node, &state_nodes);
-            Some((hashed_address, storage_trie.into_inner()))
+                account_trie.get_rlp::<TrieAccount>(hashed_address.as_slice()).unwrap()?;
+            let storage_trie = mpt_resolver.resolve(&account.storage_root).unwrap();
+            Some((hashed_address, storage_trie))
         })
         .collect();
 
-    Ok(EthereumState { state_trie: state_trie.into_inner(), storage_tries, bump })
+    let bump = Box::leak(Box::new(Bump::new()));
+
+    Ok(EthereumState { state_trie: account_trie, storage_tries, bump })
 }
