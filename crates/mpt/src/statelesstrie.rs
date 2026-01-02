@@ -81,11 +81,12 @@ impl reth_stateless::StatelessTrie for OpenVMStatelessSparseTrie {
     /// that the account is missing from the Trie _and_ the witness was complete.
     fn account(&self, address: Address) -> Result<Option<TrieAccount>, ProviderError> {
         let hashed_address = keccak256(address);
-        let account = self
-            .state
-            .state_trie
-            .get_rlp::<TrieAccount>(hashed_address.as_slice())
-            .expect("Failed to get account from trie");
+        let account =
+            self.state.state_trie.get_rlp::<TrieAccount>(hashed_address.as_slice()).map_err(
+                |e| {
+                    ProviderError::TrieWitnessError(format!("failed to get account from trie: {e}"))
+                },
+            )?;
         Ok(account)
     }
 
@@ -96,16 +97,20 @@ impl reth_stateless::StatelessTrie for OpenVMStatelessSparseTrie {
     fn storage(&self, address: Address, slot: U256) -> Result<U256, ProviderError> {
         let hashed_address = keccak256(address);
 
-        let storage_trie = self
-            .state
-            .storage_tries
-            .get(&hashed_address)
-            .expect("Missing storage trie for account");
+        let storage_trie = self.state.storage_tries.get(&hashed_address).ok_or_else(|| {
+            ProviderError::TrieWitnessError(format!(
+                "failed to get storage trie for address {address:?}",
+            ))
+        })?;
 
         let hashed_slot = keccak256(slot.to_be_bytes::<32>());
         Ok(storage_trie
             .get_rlp::<U256>(hashed_slot.as_slice())
-            .expect("Failed to get storage from trie")
+            .map_err(|e| {
+                ProviderError::TrieWitnessError(format!(
+                    "failed to get storage slot {slot:?} for address {address:?}: {e}"
+                ))
+            })?
             .unwrap_or_default())
     }
 
