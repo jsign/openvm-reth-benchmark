@@ -3,7 +3,7 @@ use std::iter::once;
 use crate::error::ClientExecutionError;
 use bumpalo::Bump;
 use itertools::Itertools;
-use openvm_mpt::{EthereumState, EthereumStateBytes, Mpt};
+use openvm_mpt::{EthereumState, EthereumStateBytes};
 use reth_evm::execute::ProviderError;
 use reth_primitives::{Block, Header, TransactionSigned};
 use reth_trie::TrieAccount;

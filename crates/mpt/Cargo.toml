@@ -12,14 +12,9 @@ thiserror.workspace = true
 smallvec.workspace = true
 bumpalo = { workspace = true, features = ["collections"] }
 bytes.workspace = true
-bincode.workspace = true
-itertools.workspace = true
 
 # reth
 reth-trie.workspace = true
-reth-stateless.workspace = true
-reth-storage-errors.workspace = true
-reth-trie-common.workspace = true
 
 # revm
 revm.workspace = true
@@ -27,8 +22,15 @@ revm-primitives.workspace = true
 
 # alloy
 alloy-rlp.workspace = true
-alloy-consensus.workspace = true
-alloy-primitives.workspace = true
+
+# host-only dependencies
+bincode = { workspace = true, optional = true }
+itertools = { workspace = true, optional = true }
+reth-stateless = { workspace = true, optional = true }
+reth-storage-errors = { workspace = true, optional = true }
+reth-trie-common = { workspace = true, optional = true }
+alloy-consensus = { workspace = true, optional = true }
+alloy-primitives = { workspace = true, optional = true, features = ["rayon", "map-foldhash"] }
 
 [dev-dependencies]
 hex-literal.workspace = true
@@ -38,4 +40,12 @@ workspace = true
 
 [features]
 default = []
-host = []
+host = [
+    "dep:bincode",
+    "dep:itertools",
+    "dep:reth-stateless",
+    "dep:reth-storage-errors",
+    "dep:reth-trie-common",
+    "dep:alloy-consensus",
+    "dep:alloy-primitives",
+]

@@ -17,4 +17,5 @@ pub mod resolver;
 #[cfg(test)]
 mod tests;
 
+#[cfg(feature = "host")]
 pub mod statelesstrie;
